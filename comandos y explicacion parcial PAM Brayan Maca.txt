@@ -1,0 +1,61 @@
+primero instalamos el modulo de autenticación PAM con el siguiente comando:
+dnf -y install mod_authnz_pam
+
+Después descomentamos la linea:
+LoadModule authnz_pam_module modules/mod_authnz_pam.so
+de la siguiente ruta: /etc/httpd/conf.modules.d/55-authnz_pam.conf
+Esto para cargar el modulo de autenticacion que instalamos
+
+Se reinicia el sistema: service httpd restart
+-----
+abrimos el archivo de configuracion de autenticacion de PAM en la ruta:
+/etc/httpd/conf.d/authnz_pam.conf y agregamos esto al final:
+<Directory "/var/www/html/auth-pam">
+    SSLRequireSSL
+    AuthType Basic
+    AuthName "PAM Authentication"
+    AuthBasicProvider PAM
+    AuthPAMService httpd-auth
+    Require valid-user
+</Directory>
+-----
+Se crea el archivo httpd-auth para configurar la autencacion:
+vim /etc/pam.d/httpd-auth
+y dentro el archivo agregamos lo siguiente:
+auth       required     pam_listfile.so item=user sense=deny file=/etc/httpd/conf.d/denyusers onerr=succeed
+auth       include      system-auth
+account    include      system-auth
+
+con estas lineas estamos indicando el tipo por ejemplo: auth que es la actividad que 
+va gestionar PAM,  el campo de control, ejemplo: required,include que indica que hacer en caso
+de exito/fallo del modulo. Y luego tenemos los argumentos que se le pasan al modulo para su operacion.
+------
+
+En el anterior archivo, en la parte de argumentos se especificó que el archivo
+donde se va a denegar la entrada a los usuario está en /etc/httpd/conf.d/denyusers 
+Entonces creamos ese archivo en esa carpeta:
+
+vim /etc/httpd/conf.d/denyusers 
+y en este archivo se agregan los usuario que se les desea denegar el permiso a la carpeta
+
+chgrp apache /etc/httpd/conf.d/denyusers
+chmod 640 /etc/httpd/conf.d/denyusers
+
+El chgrp se utilza para cambiar el grupo al cual pertenece el archivo, en este caso
+se cambia a apache
+El chmod para dar permisos de lectura y escritura al propietario, de lectura para los
+miembros del grupo y para el resto de usuarios ninguno.
+
+
+Luego se le dan permisos a la carpeta /etc/shadow
+
+chgrp apache /etc/shadow
+chmod 440 /etc/shadow
+
+Se recarga el servicio httpd: 
+service httpd reload
+
+Y por ultimo solo tenemos que crear la carpeta de archivos privados y su correspondiente 
+pagina html
+
+vim /var/www/html/archivos_privados/main.html
