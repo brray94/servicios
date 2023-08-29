@@ -10,8 +10,7 @@ Se reinicia el sistema: service httpd restart
 -----
 abrimos el archivo de configuracion de autenticacion de PAM en la ruta:
 /etc/httpd/conf.d/authnz_pam.conf y agregamos esto al final:
-<Directory "/var/www/html/auth-pam">
-    SSLRequireSSL
+<Directory "/var/www/html/archivos_privados">
     AuthType Basic
     AuthName "PAM Authentication"
     AuthBasicProvider PAM
@@ -28,7 +27,7 @@ account    include      system-auth
 
 con estas lineas estamos indicando el tipo por ejemplo: auth que es la actividad que 
 va gestionar PAM,  el campo de control, ejemplo: required,include que indica que hacer en caso
-de exito/fallo del modulo. Y luego tenemos los argumentos que se le pasan al modulo para su operacion.
+de exito/fallo del modulo. Y luego tenemos los argumentos que se le pasan al modulo para su operacion, por ejemplo: pam_listfile que es un módulo con el cual se permite negar o permitir servicios basados en un archivo.
 ------
 
 En el anterior archivo, en la parte de argumentos se especificó que el archivo
@@ -36,7 +35,7 @@ donde se va a denegar la entrada a los usuario está en /etc/httpd/conf.d/denyus
 Entonces creamos ese archivo en esa carpeta:
 
 vim /etc/httpd/conf.d/denyusers 
-y en este archivo se agregan los usuario que se les desea denegar el permiso a la carpeta
+y en este archivo se agregan los usuario que se les desea denegar el permiso a la carpeta, ejemplo: root, vagrant.
 
 chgrp apache /etc/httpd/conf.d/denyusers
 chmod 640 /etc/httpd/conf.d/denyusers
