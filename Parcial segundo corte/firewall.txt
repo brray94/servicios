@@ -1,0 +1,87 @@
+# Parcial #2
+# Servicios Telematicos
+# Brayan Maca Macancela
+
+# Se configura el SELinux para desactivarlo
+vim /etc/selinux/config
+SELINUX=disabled
+
+#iniciar firewall
+sudo service firewalld start
+
+#Se listan las zonas
+sudo firewall-cmd --list-all-zones
+
+#Configuramos el firewall
+
+#configurar interfaces
+
+#Añadir el eth2 de la zona interna
+firewall-cmd --zone=internal --add-interface=eth2 --permanent
+firewall-cmd --zone=internal --add-masquerade --permanent
+
+#En caso de necesitar remover alguna interfaz, usar este comando
+#cambiar zona e interfaz que se desea eliminar
+firewall-cmd --zone=public --remove-interface=eth1 --permanent
+
+#Añadir el eth1 de la zona publica
+firewall-cmd --zone=public --add-interface=eth1 --permanent
+firewall-cmd --zone=public --add-masquerade --permanent
+
+#Añadimos los servicios de
+firewall-cmd --zone=public --add-service=ftp --permanent
+firewall-cmd --zone=public --add-service=dns --permanent
+firewall-cmd --zone=public --add-port=53/tcp --permanent
+firewall-cmd --zone=public --add-port=53/udp --permanent
+
+#Redirecciones de tcp/udp
+firewall-cmd --zone=public --add-forward-port=port=53:proto=tcp:toport=53:toaddr=192.168.50.2 --permanent
+firewall-cmd --zone=public --add-forward-port=port=53:proto=udp:toport=53:toaddr=192.168.50.2 --permanent
+
+#Reiniciamos el servicio
+sudo firewall-cmd --reload
+
+
+#--fwd--
+$ORIGIN devcompany.com.
+$TTL 84600
+@       IN      SOA     firewall.devcompany.com.        root@devcompany.com. (
+                                        123312  ; serial
+                                        1h      ; refresh
+                                        2H      ; retry
+                                        1W      ; expire
+                                        1H )    ; minimum
+@       IN      NS      firewall.devcompany.com.
+@       IN      NS      servidor3.devcompany.com.
+@       IN      NS      servidor2.devcompany.com.
+
+;host en la zona
+@       IN      A       192.168.50.3
+@       IN      A       192.168.50.4
+@       IN      A       192.168.50.2
+@       IN      A       192.168.100.3
+firewall       IN      A       192.168.50.3
+servidor3       IN      A       192.168.50.4
+servidor2       IN      A       192.168.50.2
+
+
+#--rev--
+$ORIGIN 50.168.192.in-addr.arpa.
+$TTL 84600
+@       IN      SOA     firewall.devcompany.com.        root@devcompany.com. (
+                                        123312  ; serial
+                                        1h      ; refresh
+                                        2H      ; retry
+                                        1W      ; expire
+                                        1H )    ; minimum
+@       IN      NS      firewall.devcompany.com.
+
+;host en la zona
+3       IN      PTR     firewall.devcompany.com.
+4       IN      PTR     servidor3.devcompany.com.
+2       IN      PTR     servidor2.devcompany.com.
+
+
+
+#Configuracion del resolv.conf
+vim /etc/resolv.conf

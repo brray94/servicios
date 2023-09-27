@@ -1,0 +1,113 @@
+# Parcial #2
+# Servicios Telematicos
+# Brayan Maca Macancela
+
+
+
+# Configuracion del SELinux para desactivarlo
+vim /etc/selinux/config
+SELINUX=disabled
+
+#Instalación del servicio named
+sudo yum install bind-utils bind-libs bind-* -y
+
+
+#configuracion de las zonas en named
+vim /etc/named.conf
+options {
+        listen-on port 53 { 127.0.0.1; 192.168.50.4; };
+        listen-on-v6 port 53 { ::1; };
+        directory       "/var/named";
+        dump-file       "/var/named/data/cache_dump.db";
+        statistics-file "/var/named/data/named_stats.txt";
+        memstatistics-file "/var/named/data/named_mem_stats.txt";
+        recursing-file  "/var/named/data/named.recursing";
+        secroots-file   "/var/named/data/named.secroots";
+        allow-query     { localhost; 192.168.100.0/24; };
+
+	recursion yes;
+        dnssec-enable yes;
+        dnssec-validation yes;
+        bindkeys-file "/etc/named.root.key";
+        managed-keys-directory "/var/named/dynamic";
+        geoip-directory "/usr/share/GeoIP";
+
+        pid-file "/run/named/named.pid";
+        session-keyfile "/run/named/session.key";
+};
+
+logging {
+        channel default_debug {
+                file "data/named.run";
+                severity dynamic;
+        };
+};
+
+zone "." IN {
+        type hint;
+        file "named.ca";
+};
+
+zone "devcompany.com." IN {
+        type master;
+        file "devcompany.com.fwd";
+};
+
+zone "50.168.192.in-addr.arpa" IN {
+        type master;
+        file "devcompany.com.rev";
+};
+
+
+#--Zona fwd--
+$ORIGIN devcompany.com.
+$TTL 84600
+@       IN      SOA     servidor3.devcompany.com.       root@devcompany.com. (
+                                        123312  ; serial
+                                        1h      ; refresh
+                                        2H      ; retry
+                                        1W      ; expire
+                                        1H )    ; minimum
+@       IN      NS      servidor3.devcompany.com.
+@       IN      NS      servidor2.devcompany.com.
+@       IN      NS      firewall.devcompany.com.
+;host en la zona
+@       IN      A       192.168.50.4
+@       IN      A       192.168.50.3
+@       IN      A       192.168.50.2
+@       IN      A       192.168.100.3
+servidor3       IN      A       192.168.50.4
+firewall       IN      A       192.168.50.3
+servidor2       IN      A       192.168.50.2
+
+
+#--Zona rev--
+$ORIGIN 50.168.192.in-addr.arpa.
+$TTL 84600
+@       IN      SOA     servidor3.devcompany.com.       root@devcompany.com. (
+                                        123312  ; serial
+                                        1h      ; refresh
+                                        2H      ; retry
+                                        1W      ; expire
+                                        1H )    ; minimum
+@       IN      NS      servidor3.devcompany.com.
+
+;host en la zona
+4       IN      PTR     servidor3.devcompany.com.
+2       IN      PTR     servidor2.devcompany.com.
+3       IN      PTR     firewall.devcompany.com.
+
+
+#Permisos para las zonas
+sudo chmod 755 /var/named/devcompany.com.fwd
+sudo chmod 755 /var/named/devcompany.com.rev
+
+#Iniciar el servicio named
+service named start
+
+#Se verifican que no tenga errores las zonas
+named-checkzone devcompany.com /var/named/devcompany.com.fwd
+named-checkzone 50.168.192.in-addr.arpa /var/named/devcompany.com.rev
+
+#Reiniciamos el servicio named para aplicar cambios
+sudo service named restart

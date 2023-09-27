@@ -1,0 +1,68 @@
+# Parcial #2
+# Servicios Telematicos
+# Brayan Maca Macancela
+
+# Configuracion del SELinux para desactivarlo
+vim /etc/selinux/config
+SELINUX=disabled
+
+#Instalación del servicio named
+sudo yum install bind-utils bind-libs bind-* -y
+
+
+#Configuración de las zonas en named
+vim /etc/named.conf
+
+options {
+        listen-on port 53 { 127.0.0.1; 192.168.50.2; };
+        listen-on-v6 port 53 { ::1; };
+        directory       "/var/named";
+        dump-file       "/var/named/data/cache_dump.db";
+        statistics-file "/var/named/data/named_stats.txt";
+        memstatistics-file "/var/named/data/named_mem_stats.txt";
+        recursing-file  "/var/named/data/named.recursing";
+        secroots-file   "/var/named/data/named.secroots";
+        allow-query     { localhost; 192.168.100.0/24; };
+
+ 	recursion yes;
+        dnssec-enable yes;
+        dnssec-validation yes;
+        bindkeys-file "/etc/named.root.key";
+        managed-keys-directory "/var/named/dynamic";
+        geoip-directory "/usr/share/GeoIP";
+
+        pid-file "/run/named/named.pid";
+        session-keyfile "/run/named/session.key";
+};
+
+logging {
+        channel default_debug {
+                file "data/named.run";
+                severity dynamic;
+        };
+};
+
+zone "." IN {
+        type hint;
+        file "named.ca";
+};
+
+zone "devcompany.com." IN {
+        type slave;
+        file "slaves/devcompany.com.fwd";
+        masters{ 192.168.50.4; };
+};
+
+zone "50.168.192.in-addr.arpa" IN {
+        type slave;
+        file "slaves/devcompany.com.rev";
+        masters{ 192.168.50.4; };
+};
+
+#Se reinicia los servicios para los cambios
+sudo service named restart
+
+#Se hace ping para comprobar que el named esta funcionando correctamente
+ping servidor2.devcompany.com
+ping servidor3.devcompany.com
+ping firewall.devcompany.com
